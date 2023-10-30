@@ -54,7 +54,7 @@ class Config:
             config.read(self.config_file, 'utf-8')
             self.image_folder = config.get("Settings", "folder", fallback=self.image_folder)
             if self.image_folder.startswith("~/"):
-                self.image_folder = str(pathlib.Path.home()) + self.image_folder[1:]
+                self.image_folder = str(pathlib.Path.home()) + self.image_folder.replace("~", "", 1)
             self.fill_option = config.get("Settings", "fill", fallback=self.fill_option)
             if self.fill_option not in FILL_OPTIONS:
                 self.sort_option = FILL_OPTIONS[0]
@@ -96,7 +96,10 @@ class Config:
         # Write configuration to the file:
         config = configparser.ConfigParser()
         config.read(self.config_file)
-        config.set("Settings", "folder", cf.image_folder)
+        image_folder = cf.image_folder
+        if image_folder.startswith(str(pathlib.Path.home()) + "/"):
+            image_folder = image_folder.replace(str(pathlib.Path.home()), "~", 1)
+        config.set("Settings", "folder", image_folder)
         config.set("Settings", "fill", cf.fill_option)
         config.set("Settings", "sort", cf.sort_option)
         config.set("Settings", "backend", cf.backend)
