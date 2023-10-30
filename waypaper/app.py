@@ -183,16 +183,18 @@ class App(Gtk.Window):
 
 
     def monitor_option_display(self):
-        """Display monitor option if backend is swww"""
+        """Display monitor option if backend is swww or custom"""
         self.options_box.remove(self.monitor_option_combo)
         # if "swww" not in self.missing_backends and cf.backend not in ["wallutils", "feh"]:
-        if cf.backend == "swww":
+        if cf.backend == "swww" or cf.backend == "custom":
 
             # Check available monitors:
             monitor_names = ["All"]
             try:
-                subprocess.Popen(["swww", "init"])
+                init_output = subprocess.run(["swww", "init"], capture_output=True)
                 query_output = str(subprocess.check_output(["swww", "query"], encoding='utf-8'))
+                if cf.backend == "custom" and (not init_output.stderr or "another instance" not in init_output.stderr.decode('utf-8')):
+                    subprocess.Popen(["swww", "kill"])
                 monitors = query_output.split("\n")
                 for monitor in monitors[:-1]:
                     monitor_names.append(monitor.split(':')[0])
@@ -217,7 +219,7 @@ class App(Gtk.Window):
         for backend in BACKEND_OPTIONS:
             if backend == "wallutils":
                 backend = "setwallpaper"
-            is_backend_missing = not bool(distutils.spawn.find_executable(backend))
+            is_backend_missing = backend != "custom" and not bool(distutils.spawn.find_executable(backend))
             self.missing_backends.append(is_backend_missing)
 
         # Show error message if no backends are installed:
@@ -399,7 +401,7 @@ class App(Gtk.Window):
         self.load_image_grid()
         print(MSG_PATH, cf.selected_wallpaper)
         cf.fill_option = self.fill_option_combo.get_active_text() or cf.fill_option
-        change_wallpaper(cf.selected_wallpaper, cf.fill_option, cf.color, cf.backend, cf.selected_monitor)
+        change_wallpaper(cf.selected_wallpaper, cf.fill_option, cf.color, cf.backend, cf.selected_monitor, cf.custom_command)
         cf.save()
 
 
@@ -425,7 +427,7 @@ class App(Gtk.Window):
             return
         print(MSG_PATH, cf.selected_wallpaper)
         cf.fill_option = self.fill_option_combo.get_active_text() or cf.fill_option
-        change_wallpaper(cf.selected_wallpaper, cf.fill_option, cf.color, cf.backend, cf.selected_monitor)
+        change_wallpaper(cf.selected_wallpaper, cf.fill_option, cf.color, cf.backend, cf.selected_monitor, cf.custom_command)
         cf.save()
 
 
@@ -493,7 +495,7 @@ class App(Gtk.Window):
             cf.selected_wallpaper = wallpaper_path
             print(MSG_PATH, cf.selected_wallpaper)
             cf.fill_option = self.fill_option_combo.get_active_text() or cf.fill_option
-            change_wallpaper(cf.selected_wallpaper, cf.fill_option, cf.color, cf.backend, cf.selected_monitor)
+            change_wallpaper(cf.selected_wallpaper, cf.fill_option, cf.color, cf.backend, cf.selected_monitor, cf.custom_command)
             cf.save()
 
         # Prevent other default key handling:

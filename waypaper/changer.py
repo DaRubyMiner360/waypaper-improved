@@ -17,7 +17,7 @@ else:
     from waypaper.translation_en import *
 
 
-def change_wallpaper(image_path, fill_option, color, backend, monitor):
+def change_wallpaper(image_path, fill_option, color, backend, monitor, custom_command):
     """Run a system command to change the wallpaper depending on the backend"""
 
     try:
@@ -60,6 +60,23 @@ def change_wallpaper(image_path, fill_option, color, backend, monitor):
             if monitor != "All":
                 command.extend(["--outputs", monitor])
             subprocess.Popen(command)
+            print(f"{MSG_SETWITH} {backend}")
+
+        # custom backend:
+        elif backend == "custom":
+            fill = fill_option
+            try:
+                subprocess.Popen(["killall", "swaybg"])
+                time.sleep(0.005)
+            except Exception as e:
+                print(f"{ERR_KILL} {e}")
+            command = custom_command
+            command = command.replace("{image}", image_path)
+            command = command.replace("{resize}", fill)
+            command = command.replace("{fill-color}", color)
+            if monitor != "All":
+                command = command.replace("{outputs}", monitor)
+            subprocess.run(command, shell=True)
             print(f"{MSG_SETWITH} {backend}")
 
         # feh backend:
